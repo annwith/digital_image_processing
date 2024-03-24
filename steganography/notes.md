@@ -1,7 +1,15 @@
 Importante:
+    O que acontece se um símbolo não é utf-8?
+
+    Incrementos: especificar o tipo de codificação, utf-8, 16, 32...
+
     Checar os tipos direitinho, tipo de imagem de entrada, tipo de arquivo de entrada, tipo de encodificação. Checar se precisa passar a imagem pra uint8. Checar de funciona pra imagem em preto e branco.
 
+
+    Imagem PNG com transparência como fica? cv2.IMREAD_UNCHANGED?
+
     Fazer um requirements.txt
+    Checar se o requirements.txt tá certinho
 
     Checar qual forma de transforma de int pra bin é mais rápida
 

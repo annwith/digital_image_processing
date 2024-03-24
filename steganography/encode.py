@@ -36,7 +36,7 @@ def configure_command_line_arguments():
     parser.add_argument(
         '-i', 
         '--image_path', 
-        type=str, 
+        type=str,
         help='Path to the image file'
     )
 
@@ -44,17 +44,17 @@ def configure_command_line_arguments():
     parser.add_argument(
         '-m', 
         '--message_path', 
-        type=str, 
+        type=str,
         help='Path to the message file'
     )
-    
+
     # Add an argument for bit plans selection
     parser.add_argument(
         '-b', 
         '--bit_plans', 
-        type=str, 
+        type=str,
         help='Which bit plans to use'
-    ) 
+    )
 
     return parser.parse_args()
 
@@ -72,32 +72,27 @@ def encode_message_in_image():
 
     # Get which bit plans to use
     usable_bit_plans = usable_bit_plans_str_to_list(args.bit_plans)
-    # print("Usable bit plans:", usable_bit_plans)
 
     # Get image
-    image = cv2.imread(args.image_path, cv2.IMREAD_COLOR)
-    # print("Image:", image)
-    # print("Image shape:", image.shape)
-    # print("Image dtype:", image.dtype)
+    image = cv2.imread(args.image_path, cv2.IMREAD_COLOR) # cv2.IMREAD_UNCHANGED
 
-    # Convert image data type to uint8
+    # Check if image was found
+    if image is None:
+        raise ValueError("Image not found")
+    
+    # Ensure image data type is uint8
     image_uint8 = cv2.convertScaleAbs(image)
 
-    # Get height, width and channels
-    height, width, channels = image.shape
+    # Get height and width
+    height, width, _ = image_uint8.shape
     
     # Get image available space in bytes based on the selected bit plans
     available_image_space = (height * width * len(usable_bit_plans) * 3) // 8
     
-    # print(f"Height: {height} Width: {width} Channels: {channels}")
-    # print(f"Available image space in bytes: {available_image_space}")
-
     # Get message
     with open(file=args.message_path, mode='r', encoding="utf-8") as file:
         # Read the entire content of the file
         message = file.read()
-
-    # print(f"Message: {message}")
 
     # Encode message to bit plans
     encoded_message = encode_message_to_binary(
@@ -105,10 +100,8 @@ def encode_message_in_image():
         available_image_space=available_image_space
     )
 
-    # print("Encoded message:", encoded_message)
-
     # Get image bit plans
-    image_bit_plans = convert_image_to_bit_plans(image=image)
+    image_bit_plans = convert_image_to_bit_plans(image=image_uint8)
 
     # Write message on image bit plans
     image_bit_plans_with_hiden_message = write_message_on_image_bit_plans(
@@ -117,15 +110,10 @@ def encode_message_in_image():
         usable_bit_plans=usable_bit_plans
     )
 
-    # print("Image with hidden message:", image_bit_plans_with_hiden_message)
-
     # Convert image bit plans to image
     image_with_hidden_message = convert_bit_plans_to_image(
         bit_plans=image_bit_plans_with_hiden_message
     )
-
-    # print("Image with hidden message:", image_with_hidden_message)
-    # print("Image with hidden message shape:", image_with_hidden_message.shape)
 
     # Save image with hidden message
     cv2.imwrite("output_images/" + image_name, image_with_hidden_message)
