@@ -5,11 +5,13 @@ We follow the conventional commits specification for our project's commit messag
 ## Format
 Each commit message should follow this format:
 
+```
 <type>[optional scope]: <description>
 
 [optional body]
 
 [optional footer(s)]
+```
 
 ### Types
 - **feat**: A new feature or enhancement.
