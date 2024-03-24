@@ -38,14 +38,6 @@ def configure_command_line_arguments():
         type=str, 
         help='Path to the image file'
     )
-
-    # Add an argument for the message path
-    parser.add_argument(
-        '-m', 
-        '--message_path', 
-        type=str, 
-        help='Path to the message file'
-    )
     
     # Add an argument for bit plans selection
     parser.add_argument(
@@ -53,7 +45,7 @@ def configure_command_line_arguments():
         '--bit_plans', 
         type=str, 
         help='Which bit plans to use'
-    ) 
+    )
 
     return parser.parse_args()
 
@@ -67,7 +59,7 @@ def decode_message_in_image():
     args = configure_command_line_arguments()
 
     # Get image name
-    image_name = (args.image_path).split("/")[-1]
+    image_name = (args.image_path).split("/")[-1].split(".")[0]
 
     # Get which bit plans to use
     usable_bit_plans = usable_bit_plans_str_to_list(args.bit_plans)
@@ -91,7 +83,7 @@ def decode_message_in_image():
     message = decode_message_from_binary(binary_message=binary_message)
 
     # Save message on a file
-    with open(args.message_path, 'w', encoding="utf-8") as file:
+    with open("output_messages/" + image_name + ".txt", 'w', encoding="utf-8") as file:
         file.write(message)
 
 
