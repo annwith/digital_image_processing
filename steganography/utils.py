@@ -92,6 +92,9 @@ def char_to_binary(value: str) -> np.ndarray:
     # Convert the ASCII value to binary representation
     binary_representation = bin(ascii_value)[2:].zfill(8)
 
+    # print("ASCII value:", ascii_value)
+    # print("Binary representation:", binary_representation)
+
     # Convert the binary string to a NumPy array of integers
     binary_array = np.array(
         [int(bit) for bit in binary_representation],
@@ -231,28 +234,33 @@ def write_message_on_image_bit_plans(
         np.ndarray: A NumPy array containing the image with the hidden message.        
     """
 
-    height, width, _, _ = image_bit_plans.shape
+    height, width, channels, _ = image_bit_plans.shape
+    last_bit_plan = 7
 
     # Write the message on the image bit plans
     for bit_plan in usable_bit_plans:
-        # Check if the message is bigger than the bit plan
-        if len(message) >= (height * width):
-            # Write the message on the bit plan
-            image_bit_plans[:, :, 0, bit_plan] = message[:height*width].reshape(
-                height, width)
-        # If not, write the message on the bit plan and breaks the loop
-        else:
-            # Flatten the bit plan
-            image_bit_plan = np.reshape(image_bit_plans[:, :, 0, bit_plan], -1)
-            # Concatenate the message with the remaining bit plan
-            message = np.concatenate(
-                [message, image_bit_plan[len(message):]], axis=0)
-            # Write the message on the bit plan
-            image_bit_plans[:, :, 0, bit_plan] = message.reshape(height, width)
+        plan_loc = last_bit_plan - bit_plan
+        for channel in range(channels):
+            # Check if the message is bigger than the bit plan
+            if len(message) >= (height * width):
+                # Write the message on the bit plan
+                image_bit_plans[:, :, channel, plan_loc] = message[
+                    :height*width
+                ].reshape(height, width)
+            # If not, write the message on the bit plan and breaks the loop
+            else:
+                # Flatten the bit plan
+                image_bit_plan = np.reshape(
+                    image_bit_plans[:, :, channel, plan_loc], -1)
+                # Concatenate the message with the remaining bit plan
+                message = np.concatenate(
+                    [message, image_bit_plan[len(message):]], axis=0)
+                # Write the message on the bit plan
+                image_bit_plans[:, :, channel, plan_loc] = message.reshape(height, width)
 
-            break
-        # Keep track of the remaining message
-        message = message[height*width:]
+                break
+            # Keep track of the remaining message
+            message = message[height*width:]
 
     return image_bit_plans
 
@@ -277,11 +285,17 @@ def read_message_from_image_bit_plans(
 
     # Initialize the binary message
     binary_message = np.array([])
+    channels = image_bit_plans.shape[2]
+    last_bit_plan = 7
 
     # Read the message on the image bit plans
     for bit_plan in usable_bit_plans:
-        binary_message = np.concatenate(
-            [binary_message, image_bit_plans[:, :, 0, bit_plan].reshape(-1)], axis=0)
+        plan_loc = last_bit_plan - bit_plan
+        for channel in range(channels):
+            binary_message = np.concatenate([
+                binary_message,
+                image_bit_plans[:, :, channel, plan_loc].reshape(-1)
+            ], axis=0)
 
     # Ensure the binary message has a size multiple of 8
     binary_message = binary_message[:(binary_message.size // 8) * 8]
