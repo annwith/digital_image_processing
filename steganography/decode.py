@@ -5,6 +5,7 @@ RA: 200208
 """
 
 import argparse
+import time
 import cv2
 
 from utils import \
@@ -80,8 +81,15 @@ def decode_message_in_image():
     # Convert image data type to uint8
     image_uint8 = cv2.convertScaleAbs(image)
 
+    start_time = time.time() # Set start time
+
     # Get image bit plans
     image_bits_plans = convert_image_to_bits_plans(image=image_uint8)
+
+    end_time = time.time() # Set end time
+    print(f"Convert image to bits plans: {end_time - start_time}") # Print execution time
+
+    start_time = time.time() # Set start time
 
     # Get message from the image bit plans
     binary_message = read_message_from_image_bits_plans(
@@ -89,8 +97,16 @@ def decode_message_in_image():
         usable_bits_plans=usable_bits_plans
     )
 
+    end_time = time.time() # Set end time
+    print(f"Read message: {end_time - start_time}") # Print execution time
+
+    start_time = time.time() # Set start time
+
     # Convert binary message to string
     message = decode_message_from_binary(binary_message=binary_message)
+
+    end_time = time.time() # Set end time
+    print(f"Decode: {end_time - start_time}") # Print execution time
 
     # Save message on a file
     with open("output_messages/" + image_name + ".txt", 'w', encoding="utf-8") as file:
