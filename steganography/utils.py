@@ -7,24 +7,67 @@ from typing import List
 import numpy as np
 
 
-def int_to_binary_deprecated(value: int) -> np.ndarray:
+def usable_bits_plans_str_to_list(
+    bits_plans_str: str
+) -> List[int]:
     """
-    Convert an integer value to a binary NumPy array.
+    Convert a string representing the bit plans to a list of integers. The 
+    string should only contain the numbers 0, 1, or/and 2 separated by commas.
+
+    Parameters:
+        bits_plans_str (str): A string representing the bit plans to use.
+
+    Returns:
+        List[int]: A list of integers representing the bit plans to use.
+
+    """
+    # Define the pattern for the bit plans string
+    pattern = r'^[012](,[012])*$'
+
+    # Use re.match to check if the input string matches the pattern
+    if not re.match(pattern, bits_plans_str):
+        raise ValueError(
+            "Invalid bit plans string. Please use only the numbers 0, 1, or 2 "
+            "separated by commas and without space.")
+
+    # Split the string by commas to get the individual bit plans
+    bits_plans_list = bits_plans_str.split(',')
+
+    # Convert the bit plans to integers
+    bits_plans = [int(plan) for plan in bits_plans_list]
+
+    # Remove repeated bit plans
+    bits_plans = list(set(bits_plans))
+
+    # Sort
+    bits_plans.sort()
+
+    return bits_plans
+
+
+def int_to_binary(value: int) -> np.ndarray:
+    """
+    Convert an integer value to a 1D NumPy array containing the integer binary 
+    representation.
 
     Parameters:
         value (int): The integer value to convert to binary.
 
     Returns:
-        np.ndarray: A NumPy array representing the binary representation of the
-                    input integer.
+        np.ndarray: A 1D unsigned integers NumPy array containing the binary 
+                    representation of the input integer. The size of the NumPy 
+                    array is 8.
     """
+    # Get the binary representation of the integer value as a string list
     bin_str_list = list(bin(value)[2:].zfill(8))
+    
+    # Convert the binary string list to a NumPy array of integers
     bin_array = np.array(bin_str_list, dtype=int)
 
     return bin_array
 
 
-def int_to_binary(value: int) -> np.ndarray:
+def int_to_binary_deprecated(value: int) -> np.ndarray:
     """
     Convert an integer value to a 1D NumPy array containing the integer binary 
     representation.
@@ -92,9 +135,6 @@ def char_to_binary(value: str) -> np.ndarray:
     # Convert the ASCII value to binary representation
     binary_representation = bin(ascii_value)[2:].zfill(8)
 
-    # print("ASCII value:", ascii_value)
-    # print("Binary representation:", binary_representation)
-
     # Convert the binary string to a NumPy array of integers
     binary_array = np.array(
         [int(bit) for bit in binary_representation],
@@ -127,7 +167,7 @@ def binary_to_char(value: np.ndarray) -> str:
     return char_value
 
 
-def convert_image_to_bit_plans(image: np.ndarray) -> np.ndarray:
+def convert_image_to_bits_plans(image: np.ndarray) -> np.ndarray:
     """
     Extracts the bit plans of each color channel from an image.
 
@@ -154,12 +194,8 @@ def convert_image_to_bit_plans(image: np.ndarray) -> np.ndarray:
     # Get the height, width and channels of the image
     height, width, channels = image.shape
 
-    # get_bit_plans_vectorized = np.vectorize(int_to_binary)
-    # bit_plans_vectorized = get_bit_plans_vectorized(image)
-    # print("Bit plans vectorized:", bit_plans_vectorized)
-
     #  Initialize the bit plans array to store the image bit plans
-    bit_plans = np.zeros((height, width, channels, 8), dtype=np.uint8)
+    bits_plans = np.zeros((height, width, channels, 8), dtype=np.uint8)
 
     # Iterate over each pixel
     for y in range(height):
@@ -168,19 +204,98 @@ def convert_image_to_bit_plans(image: np.ndarray) -> np.ndarray:
             blue, green, red = image[y, x]
 
             # Stores the 8-bit representation of each color channel
-            bit_plans[y, x, 0] = int_to_binary(blue)
-            bit_plans[y, x, 1] = int_to_binary(green)
-            bit_plans[y, x, 2] = int_to_binary(red)
+            bits_plans[y, x, 0] = int_to_binary_deprecated(blue)
+            bits_plans[y, x, 1] = int_to_binary_deprecated(green)
+            bits_plans[y, x, 2] = int_to_binary_deprecated(red)
 
-    return bit_plans
+    return bits_plans
 
 
-def convert_bit_plans_to_image(bit_plans: np.ndarray) -> np.ndarray:
+def convert_image_to_bits_plans_mapping(image: np.ndarray) -> np.ndarray:
+    """
+    Extracts the bit plans of each color channel from an image.
+
+    Args:
+        image (np.ndarray): A NumPy array representing the image with shape
+                          (height, width, channels).
+
+    Returns:
+        np.ndarray: A NumPy array containing the bit plans of each color channel
+                  for each pixel. The resulting array has shape (height, width,
+                  channels, 8), where 8 represents the 8-bit representation of 
+                  each color channel.
+
+    The function takes an image represented as a NumPy array and extracts the 
+    bit plans of each color channel (blue, green, and red). It returns a NumPy 
+    array containing the bit plans for each channel.
+
+    Bit plans are stored in the returned array with the following dimensions:
+    - The first two dimensions correspond to the height and width of the image.
+    - The third dimension represents the color channels (blue, green, and red).
+    - The fourth dimension is the 8-bit representation of the value of each 
+      color channel for each pixel.
+    """
+    # Get the height, width and channels of the image
+    height, width, channels = image.shape
+
+    #  Initialize the bit plans array to store the image bit plans
+    bits_plans = np.zeros((height, width, channels, 8), dtype=np.uint8)
+
+    # Iterate over each pixel
+    for y in range(height):
+        for x in range(width):
+            # Get the BGR color values of the pixel
+            blue, green, red = image[y, x]
+
+            # Stores the 8-bit representation of each color channel
+            bits_plans[y, x, 0] = int_to_binary_deprecated(blue)
+            bits_plans[y, x, 1] = int_to_binary_deprecated(green)
+            bits_plans[y, x, 2] = int_to_binary_deprecated(red)
+
+    return bits_plans
+
+
+def convert_image_to_bits_plans_vectorized(image: np.ndarray) -> np.ndarray:
+    """
+    Extracts the bit plans of each color channel from an image.
+
+    Args:
+        image (np.ndarray): A NumPy array representing the image with shape
+                          (height, width, channels).
+
+    Returns:
+        np.ndarray: A NumPy array containing the bit plans of each color channel
+                  for each pixel. The resulting array has shape (height, width,
+                  channels, 8), where 8 represents the 8-bit representation of 
+                  each color channel.
+
+    The function takes an image represented as a NumPy array and extracts the 
+    bit plans of each color channel (blue, green, and red). It returns a NumPy 
+    array containing the bit plans for each channel.
+
+    Bit plans are stored in the returned array with the following dimensions:
+    - The first two dimensions correspond to the height and width of the image.
+    - The third dimension represents the color channels (blue, green, and red).
+    - The fourth dimension is the 8-bit representation of the value of each 
+      color channel for each pixel.
+    """
+
+    # Create vectorized function to convert integer to binary
+    get_bits_plans_vectorized = np.vectorize(
+        int_to_binary_deprecated, signature='()->(n)')
+
+    # Apply the vectorized function to the image
+    bits_plans_vectorized = get_bits_plans_vectorized(image)
+    
+    return bits_plans_vectorized
+
+
+def convert_bits_plans_to_image(bits_plans: np.ndarray) -> np.ndarray:
     """
     Converts the bit plans of an image to a NumPy array representing the image.
 
     Args:
-        bit_plans (np.array): A NumPy array containing the bit plans of an image.
+        bits_plans (np.array): A NumPy array containing the bit plans of an image.
 
     Returns:
         np.array: A NumPy array representing the image with shape (height, width, 
@@ -195,7 +310,7 @@ def convert_bit_plans_to_image(bit_plans: np.ndarray) -> np.ndarray:
       color channel for each pixel.
     """
     # Get the height, width, and channels of the bit plans array
-    height, width, channels, _ = bit_plans.shape
+    height, width, channels, _ = bits_plans.shape
 
     # Image array to store the image
     image = np.zeros((height, width, channels), dtype=np.uint8)
@@ -204,9 +319,9 @@ def convert_bit_plans_to_image(bit_plans: np.ndarray) -> np.ndarray:
     for y in range(height):
         for x in range(width):
             # Get the BGR color values of the pixel
-            blue = binary_to_int(bit_plans[y, x, 0])
-            green = binary_to_int(bit_plans[y, x, 1])
-            red = binary_to_int(bit_plans[y, x, 2])
+            blue = binary_to_int(bits_plans[y, x, 0])
+            green = binary_to_int(bits_plans[y, x, 1])
+            red = binary_to_int(bits_plans[y, x, 2])
 
             # Store the color values in the image array
             image[y, x] = [blue, green, red]
@@ -214,10 +329,10 @@ def convert_bit_plans_to_image(bit_plans: np.ndarray) -> np.ndarray:
     return image
 
 
-def write_message_on_image_bit_plans(
+def write_message_on_image_bits_plans(
     message: np.ndarray,
-    image_bit_plans: np.ndarray,
-    usable_bit_plans: List[int]
+    image_bits_plans: np.ndarray,
+    usable_bits_plans: List[int]
 ) -> np.ndarray:
     """
     Write a message on the bit plans of an image.
@@ -225,57 +340,57 @@ def write_message_on_image_bit_plans(
     Parameters:
         message (np.ndarray): A 1D NumPy array containing the binary 
                               representation of the message.
-        image_bit_plans (np.ndarray): A NumPy array containing the bit plans of 
+        image_bits_plans (np.ndarray): A NumPy array containing the bit plans of 
                                       the image.
-        usable_bit_plans (List[int]): A list of integers representing the bit 
+        usable_bits_plans (List[int]): A list of integers representing the bit 
                                       plans to use.
 
     Returns:
         np.ndarray: A NumPy array containing the image with the hidden message.        
     """
 
-    height, width, channels, _ = image_bit_plans.shape
+    height, width, channels, _ = image_bits_plans.shape
     last_bit_plan = 7
 
     # Write the message on the image bit plans
-    for bit_plan in usable_bit_plans:
+    for bit_plan in usable_bits_plans:
         plan_loc = last_bit_plan - bit_plan
         for channel in range(channels):
             # Check if the message is bigger than the bit plan
             if len(message) >= (height * width):
                 # Write the message on the bit plan
-                image_bit_plans[:, :, channel, plan_loc] = message[
+                image_bits_plans[:, :, channel, plan_loc] = message[
                     :height*width
                 ].reshape(height, width)
             # If not, write the message on the bit plan and breaks the loop
             else:
                 # Flatten the bit plan
                 image_bit_plan = np.reshape(
-                    image_bit_plans[:, :, channel, plan_loc], -1)
+                    image_bits_plans[:, :, channel, plan_loc], -1)
                 # Concatenate the message with the remaining bit plan
                 message = np.concatenate(
                     [message, image_bit_plan[len(message):]], axis=0)
                 # Write the message on the bit plan
-                image_bit_plans[:, :, channel, plan_loc] = message.reshape(height, width)
+                image_bits_plans[:, :, channel, plan_loc] = message.reshape(height, width)
 
                 break
             # Keep track of the remaining message
             message = message[height*width:]
 
-    return image_bit_plans
+    return image_bits_plans
 
 
-def read_message_from_image_bit_plans(
-    image_bit_plans: np.ndarray,
-    usable_bit_plans: List[int]
+def read_message_from_image_bits_plans(
+    image_bits_plans: np.ndarray,
+    usable_bits_plans: List[int]
 ) -> np.ndarray:
     """
     Read a message from the bit plans of an image.
 
     Parameters:
-        image_bit_plans (np.ndarray): A NumPy array containing the bit plans of 
+        image_bits_plans (np.ndarray): A NumPy array containing the bit plans of 
                                       the image.
-        usable_bit_plans (List[int]): A list of integers representing the bit 
+        usable_bits_plans (List[int]): A list of integers representing the bit 
                                       plans to use.
 
     Returns:
@@ -285,16 +400,16 @@ def read_message_from_image_bit_plans(
 
     # Initialize the binary message
     binary_message = np.array([])
-    channels = image_bit_plans.shape[2]
+    channels = image_bits_plans.shape[2]
     last_bit_plan = 7
 
     # Read the message on the image bit plans
-    for bit_plan in usable_bit_plans:
+    for bit_plan in usable_bits_plans:
         plan_loc = last_bit_plan - bit_plan
         for channel in range(channels):
             binary_message = np.concatenate([
                 binary_message,
-                image_bit_plans[:, :, channel, plan_loc].reshape(-1)
+                image_bits_plans[:, :, channel, plan_loc].reshape(-1)
             ], axis=0)
 
     # Ensure the binary message has a size multiple of 8
@@ -308,8 +423,8 @@ def encode_message_to_binary(
     available_image_space: int
 ) -> np.ndarray:
     """
-    Receives a message, convert it to binary following ASCII enconding and 
-    stores in a 1D NumPy array.
+    Receives a message, add the size of the message on its beginning, convert it
+    to binary following ASCII enconding and stores in a 1D NumPy array.
 
     Parameters:
         message (str): The message to encode.
@@ -319,8 +434,12 @@ def encode_message_to_binary(
         np.ndarray: A 1D NumPy array containing the binary representation of the 
                     message.
     """
+    # Print message size
+    print(f"Message size: {len(message)} bytes")
+
     # Include the message size in the message
     message = str(len(message)) + " " + message
+    print(f"Message size after adding size information: {len(message)} bytes")
 
     # Get the size of the message in bytes
     message_size = len(message)
@@ -377,37 +496,3 @@ def decode_message_from_binary(
         int(decoded_message_size) + len(decoded_message_size) + 1]
 
     return decoded_message
-
-
-def usable_bit_plans_str_to_list(
-    bit_plans_str: str
-) -> List[int]:
-    """
-    Convert a string representing the bit plans to a list of integers. The 
-    string should only contain the numbers 0, 1, or/and 2 separated by commas.
-
-    Parameters:
-        bit_plans_str (str): A string representing the bit plans to use.
-
-    Returns:
-        List[int]: A list of integers representing the bit plans to use.
-
-    """
-    # Define the pattern for the bit plans string
-    pattern = r'^[012]+(,[012]+)*$'
-
-    # Use re.match to check if the input string matches the pattern
-    if not re.match(pattern, bit_plans_str):
-        raise ValueError(
-            "Invalid bit plans string. Please use only the numbers 0, 1, or 2 separated by commas.")
-
-    # Split the string by commas to get the individual bit plans
-    bit_plans_list = bit_plans_str.split(',')
-
-    # Convert the bit plans to integers
-    bit_plans = [int(plan) for plan in bit_plans_list]
-
-    # Remove repeated bit plans
-    bit_plans = list(set(bit_plans))
-
-    return bit_plans

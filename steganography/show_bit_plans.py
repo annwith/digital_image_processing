@@ -48,7 +48,7 @@ def configure_command_line_arguments():
     parser.add_argument(
         '--save',
         action='store_true', 
-        help='Flag to save the bit plan images'
+        help='Flag to save the bits plan images'
     )
 
     return parser.parse_args()

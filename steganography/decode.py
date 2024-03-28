@@ -8,9 +8,9 @@ import argparse
 import cv2
 
 from utils import \
-    usable_bit_plans_str_to_list, \
-    convert_image_to_bit_plans, \
-    read_message_from_image_bit_plans, \
+    usable_bits_plans_str_to_list, \
+    convert_image_to_bits_plans, \
+    read_message_from_image_bits_plans, \
     decode_message_from_binary
 
 
@@ -42,9 +42,16 @@ def configure_command_line_arguments():
     # Add an argument for bit plans selection
     parser.add_argument(
         '-b', 
-        '--bit_plans', 
+        '--bits_plans', 
         type=str, 
         help='Which bit plans to use'
+    )
+
+    # Add an argument to force the message decode and use all bits plans.
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Flag to force the message decode to use all bits plans.'
     )
 
     return parser.parse_args()
@@ -62,7 +69,10 @@ def decode_message_in_image():
     image_name = (args.image_path).split("/")[-1].split(".")[0]
 
     # Get which bit plans to use
-    usable_bit_plans = usable_bit_plans_str_to_list(args.bit_plans)
+    if args.force:
+        usable_bits_plans = [0, 1, 2, 3, 4, 5, 6, 7]
+    else:
+        usable_bits_plans = usable_bits_plans_str_to_list(args.bits_plans)
 
     # Get image
     image = cv2.imread(args.image_path, cv2.IMREAD_COLOR)
@@ -71,12 +81,12 @@ def decode_message_in_image():
     image_uint8 = cv2.convertScaleAbs(image)
 
     # Get image bit plans
-    image_bit_plans = convert_image_to_bit_plans(image=image_uint8)
+    image_bits_plans = convert_image_to_bits_plans(image=image_uint8)
 
     # Get message from the image bit plans
-    binary_message = read_message_from_image_bit_plans(
-        image_bit_plans=image_bit_plans,
-        usable_bit_plans=usable_bit_plans
+    binary_message = read_message_from_image_bits_plans(
+        image_bits_plans=image_bits_plans,
+        usable_bits_plans=usable_bits_plans
     )
 
     # Convert binary message to string
@@ -85,6 +95,7 @@ def decode_message_in_image():
     # Save message on a file
     with open("output_messages/" + image_name + ".txt", 'w', encoding="utf-8") as file:
         file.write(message)
+    file.close()
 
 
 if __name__ == "__main__":
