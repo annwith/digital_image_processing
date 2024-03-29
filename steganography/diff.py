@@ -1,7 +1,5 @@
 """
-Trabalho 1: Esteganografia
-Nome: Juliana Midlej do Espírito Santo
-RA: 200208
+Compare two files.
 """
 
 import argparse

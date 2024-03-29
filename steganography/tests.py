@@ -2,6 +2,7 @@ import unittest
 import time
 
 import cv2
+import numpy as np
 
 from utils import \
     int_to_binary_deprecated, \
@@ -66,7 +67,7 @@ class TestConvertImageToBitsPlans(unittest.TestCase):
         """
 
         # Create a test image
-        image = cv2.imread('input_images/monalisa.png')
+        image = cv2.imread('input_images/test_image.png')
         
         start_time = time.time()
         bits_plans = convert_image_to_bits_plans(image)

@@ -204,9 +204,9 @@ def convert_image_to_bits_plans(image: np.ndarray) -> np.ndarray:
             blue, green, red = image[y, x]
 
             # Stores the 8-bit representation of each color channel
-            bits_plans[y, x, 0] = int_to_binary_deprecated(blue)
-            bits_plans[y, x, 1] = int_to_binary_deprecated(green)
-            bits_plans[y, x, 2] = int_to_binary_deprecated(red)
+            bits_plans[y, x, 0] = int_to_binary(blue)
+            bits_plans[y, x, 1] = int_to_binary(green)
+            bits_plans[y, x, 2] = int_to_binary(red)
 
     return bits_plans
 
@@ -248,9 +248,9 @@ def convert_image_to_bits_plans_mapping(image: np.ndarray) -> np.ndarray:
             blue, green, red = image[y, x]
 
             # Stores the 8-bit representation of each color channel
-            bits_plans[y, x, 0] = int_to_binary_deprecated(blue)
-            bits_plans[y, x, 1] = int_to_binary_deprecated(green)
-            bits_plans[y, x, 2] = int_to_binary_deprecated(red)
+            bits_plans[y, x, 0] = int_to_binary(blue)
+            bits_plans[y, x, 1] = int_to_binary(green)
+            bits_plans[y, x, 2] = int_to_binary(red)
 
     return bits_plans
 
@@ -282,7 +282,7 @@ def convert_image_to_bits_plans_vectorized(image: np.ndarray) -> np.ndarray:
 
     # Create vectorized function to convert integer to binary
     get_bits_plans_vectorized = np.vectorize(
-        int_to_binary_deprecated, signature='()->(n)')
+        int_to_binary, signature='()->(n)')
 
     # Apply the vectorized function to the image
     bits_plans_vectorized = get_bits_plans_vectorized(image)
