@@ -27,7 +27,7 @@ def usable_bits_plans_str_to_list(
     # Use re.match to check if the input string matches the pattern
     if not re.match(pattern, bits_plans_str):
         raise ValueError(
-            "Invalid bit plans string. Please use only the numbers 0, 1, or 2 "
+            "Invalid bits plans string. Please use only the numbers 0, 1, or 2 "
             "separated by commas and without space.")
 
     # Split the string by commas to get the individual bit plans

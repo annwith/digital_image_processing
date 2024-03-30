@@ -27,7 +27,7 @@ def configure_command_line_arguments():
     parser.add_argument(
         '-b', 
         '--bytes', 
-        type=str, 
+        type=int,
         help='Bytes number of the message'
     )
 
@@ -44,15 +44,20 @@ def generate_message():
 
     # Generate random ASCII characters
     random_chars = np.random.randint(
-        256,
-        size=int(args.bytes)
+        32,
+        127,
+        size=args.bytes
     )
+
+    print(random_chars.shape)
 
     # Convert ASCII codes to characters
     random_text = ''.join(map(chr, random_chars))
 
+    print(len(random_text))
+
     # Save the random text to a file
-    with open("input_messages/"+args.bytes+'_message.txt', 'w', encoding="utf-8") as file:
+    with open("input_messages/"+str(args.bytes)+'_message.txt', 'w', encoding="utf-8") as file:
         file.write(random_text)
     file.close()
 

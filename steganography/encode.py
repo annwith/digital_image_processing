@@ -33,7 +33,7 @@ def configure_command_line_arguments():
     # Create an ArgumentParser object
     parser = argparse.ArgumentParser(description='Encode a message on a image')
 
-     # Add an argument for the image path
+    # Add an argument for the image path
     parser.add_argument(
         '-i', 
         '--image_path', 
@@ -57,6 +57,14 @@ def configure_command_line_arguments():
         help='Which bits plans to use'
     )
 
+    # Add an argument for the output image path
+    parser.add_argument(
+        '-o', 
+        '--output_image_path', 
+        type=str,
+        help='Path to the output image file'
+    )
+
     # Add an argument to force the message encode and use all bits plans needed,
     # starting from the least significant. If yet, the message does not fit in
     # the image, the program will raise an error.
@@ -76,9 +84,6 @@ def encode_message_in_image():
 
     # Parse command-line arguments
     args = configure_command_line_arguments()
-
-    # Get image name
-    image_name = (args.image_path).split("/")[-1]
 
     # Get which bit plans to use
     if args.force:
@@ -101,7 +106,7 @@ def encode_message_in_image():
     
     # Get image available space in bytes based on the selected bit plans
     available_image_space = (height * width * len(usable_bits_plans) * 3) // 8
-    print(f"Avaliable image space: {available_image_space} bytes")
+    print(f"Available image space: {available_image_space} bytes")
 
     # Get message and read it
     with open(file=args.message_path, mode='r', encoding="utf-8") as file:
@@ -110,7 +115,7 @@ def encode_message_in_image():
 
     start_time = time.time() # Set start time
     
-    # Encode message to bit plans
+    # Encode message to binary
     encoded_message = encode_message_to_binary(
         message=message,
         available_image_space=available_image_space
@@ -150,7 +155,7 @@ def encode_message_in_image():
     print(f"Convert to image: {end_time - start_time}") # Print execution time
 
     # Save image with hidden message
-    cv2.imwrite("output_images/" + image_name, image_with_hidden_message)
+    cv2.imwrite(args.output_image_path, image_with_hidden_message)
 
 
 if __name__ == "__main__":

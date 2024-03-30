@@ -8,7 +8,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 
-from utils import convert_image_to_bit_plans
+from utils import convert_image_to_bits_plans
 
 
 def configure_command_line_arguments():
@@ -44,23 +44,31 @@ def configure_command_line_arguments():
         help='Path to the output image file'
     )
 
+    # Add an argument for the bits plans
+    parser.add_argument(
+        '-b', 
+        '--bits_plans', 
+        type=str,
+        help='Which bit plans to show'
+    )
+
     # Add an argument to save the bit plan images
     parser.add_argument(
         '--save',
-        action='store_true', 
+        action='store_true',
         help='Flag to save the bits plan images'
     )
 
     return parser.parse_args()
 
 
-def plot_bit_plan(input_image_bit_plans, output_image_bit_plans, bit_plan):
+def plot_bit_plan(input_image_bits_plans, output_image_bits_plans, bit_plan):
     """
     Plots the bit plans of the input and output images for each channel.
 
     Parameters:
-        input_image_bit_plans (numpy.ndarray): The bit plans of the input image.
-        output_image_bit_plans (numpy.ndarray): The bit plans of the output image.
+        input_image_bits_plans (numpy.ndarray): The bit plans of the input image.
+        output_image_bits_plans (numpy.ndarray): The bit plans of the output image.
         bit_plan (int): The bit plan to plot.
     
     """
@@ -69,26 +77,26 @@ def plot_bit_plan(input_image_bit_plans, output_image_bit_plans, bit_plan):
     fig.suptitle(f'Bit Plan {bit_plan}')
 
     for i in range(3):
-        axs[0, i].imshow(input_image_bit_plans[:,:,i,7 - bit_plan], cmap='gray')
+        axs[0, i].imshow(input_image_bits_plans[:,:,i,7 - bit_plan], cmap='gray')
         axs[0, i].set_title(f'Input Image Channel: {i}')
         axs[0, i].axis('off')
 
-        axs[1, i].imshow(output_image_bit_plans[:,:,i,7 - bit_plan], cmap='gray')
+        axs[1, i].imshow(output_image_bits_plans[:,:,i,7 - bit_plan], cmap='gray')
         axs[1, i].set_title(f'Output Image Channel: {i}')
         axs[1, i].axis('off')
 
     plt.show()
 
 
-def save_bit_plan(image_name, input_image_bit_plans, output_image_bit_plans, bit_plan, output_dir):
+def save_bit_plan(image_name, input_image_bits_plans, output_image_bits_plans, bit_plan, output_dir):
     """
     Saves the bit plans of the input and output images for each channel.
 
     Parameters:    args = configure_command_line_arguments()
 
         image_name (str): The name of the image.
-        input_image_bit_plans (numpy.ndarray): The bit plans of the input image.
-        output_image_bit_plans (numpy.ndarray): The bit plans of the output image.
+        input_image_bits_plans (numpy.ndarray): The bit plans of the input image.
+        output_image_bits_plans (numpy.ndarray): The bit plans of the output image.
         bit_plan (int): The bit plan to save.
         output_dir (str): The directory to save the bit plans.
 
@@ -103,14 +111,14 @@ def save_bit_plan(image_name, input_image_bit_plans, output_image_bit_plans, bit
             f'{image_name}_input_channel_{i}_bit_plan_{bit_plan}.png')
         plt.imsave(
             input_file_path,
-            input_image_bit_plans[:,:,i,7 - bit_plan], cmap='gray')
+            input_image_bits_plans[:,:,i,7 - bit_plan], cmap='gray')
 
         output_file_path = os.path.join(
             output_dir,
             f'{image_name}_output_channel_{i}_bit_plan_{bit_plan}.png')
         plt.imsave(
             output_file_path,
-            output_image_bit_plans[:,:,i,7 - bit_plan], cmap='gray')
+            output_image_bits_plans[:,:,i,7 - bit_plan], cmap='gray')
 
 
 def main():
@@ -135,41 +143,27 @@ def main():
         raise ValueError("Image not found")
     
     # Get the bit plans of the input image
-    input_image_bit_plans = convert_image_to_bit_plans(input_image)
+    input_image_bits_plans = convert_image_to_bits_plans(input_image)
 
     # Get the bit plans of the output image
-    output_image_bit_plans = convert_image_to_bit_plans(output_image)
+    output_image_bits_plans = convert_image_to_bits_plans(output_image)
 
-    # Plot the bit plans [0, 1, 2]
-    for bit_plan in range(3):
+    # Plot the bit plans
+    for bit_plan in list(args.bits_plans.replace(',', '')):
+        bit_plan = int(bit_plan)
         plot_bit_plan(
-            input_image_bit_plans,
-            output_image_bit_plans,
+            input_image_bits_plans,
+            output_image_bits_plans,
             bit_plan
         )
         if args.save:
             save_bit_plan(
                 image_name,
-                input_image_bit_plans,
-                output_image_bit_plans,
+                input_image_bits_plans,
+                output_image_bits_plans,
                 bit_plan,
-                'output_bit_plans'
+                'output_bits_plans'
             )
-
-    # Plot the bit plan 7
-    plot_bit_plan(
-        input_image_bit_plans,
-        output_image_bit_plans,
-        7
-    )
-    if args.save:
-        save_bit_plan(
-            image_name,
-            input_image_bit_plans,
-            output_image_bit_plans,
-            7,
-            'output_bit_plans'
-        )
 
 
 if __name__ == "__main__":
