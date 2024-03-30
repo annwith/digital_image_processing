@@ -36,7 +36,7 @@ def configure_command_line_arguments():
     parser.add_argument(
         '-i', 
         '--image_path', 
-        type=str, 
+        type=str,
         help='Path to the image file'
     )
     
@@ -44,7 +44,7 @@ def configure_command_line_arguments():
     parser.add_argument(
         '-b', 
         '--bits_plans', 
-        type=str, 
+        type=str,
         help='Which bit plans to use'
     )
 

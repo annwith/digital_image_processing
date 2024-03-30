@@ -49,12 +49,8 @@ def generate_message():
         size=args.bytes
     )
 
-    print(random_chars.shape)
-
     # Convert ASCII codes to characters
     random_text = ''.join(map(chr, random_chars))
-
-    print(len(random_text))
 
     # Save the random text to a file
     with open("input_messages/"+str(args.bytes)+'_message.txt', 'w', encoding="utf-8") as file:
