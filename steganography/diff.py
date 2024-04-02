@@ -54,12 +54,10 @@ def compare():
     # Get input message
     with open(args.input_message, 'r', encoding="utf-8") as input_message_file:
         input_message = input_message_file.read()
-    input_message_file.close()
 
     # Get output message
     with open(args.output_message, 'r', encoding="utf-8") as output_message_file:
         output_message = output_message_file.read()
-    output_message_file.close()
     
     # Compare the two messages
     if input_message == output_message:

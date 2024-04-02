@@ -115,7 +115,6 @@ def encode_message_in_image():
     # Get message and read it
     with open(file=args.message_path, mode='r', encoding="utf-8") as file:
         message = file.read()
-    file.close()
 
     start_time = time.time() # Set start time
     

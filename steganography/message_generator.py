@@ -56,7 +56,6 @@ def generate_message():
     # Save the random text to a file
     with open("input_messages/"+str(args.bytes)+'_message.txt', 'w', encoding="utf-8") as file:
         file.write(random_text)
-    file.close()
 
 
 if __name__ == "__main__":

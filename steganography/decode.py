@@ -40,7 +40,7 @@ def configure_command_line_arguments():
         help='Path to the image file',
         required=True
     )
-    
+
     # Add an argument for bit plans selection
     parser.add_argument(
         '-b', 
@@ -113,7 +113,6 @@ def decode_message_in_image():
     # Save message on a file
     with open("output_messages/" + image_name + ".txt", 'w', encoding="utf-8") as file:
         file.write(message)
-    file.close()
 
 
 if __name__ == "__main__":
