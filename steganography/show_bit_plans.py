@@ -33,7 +33,8 @@ def configure_command_line_arguments():
         '-i', 
         '--input_image_path', 
         type=str,
-        help='Path to the input image file'
+        help='Path to the input image file',
+        required=True
     )
 
     # Add an argument for the output image path
@@ -41,7 +42,8 @@ def configure_command_line_arguments():
         '-o', 
         '--output_image_path', 
         type=str,
-        help='Path to the output image file'
+        help='Path to the output image file',
+        required=True
     )
 
     # Add an argument for the bits plans
@@ -49,7 +51,8 @@ def configure_command_line_arguments():
         '-b', 
         '--bits_plans', 
         type=str,
-        help='Which bit plans to show'
+        help='Which bit plans to show',
+        required=True
     )
 
     # Add an argument to save the bit plan images

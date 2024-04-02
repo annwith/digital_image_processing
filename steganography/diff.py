@@ -27,7 +27,8 @@ def configure_command_line_arguments():
         '-i', 
         '--input_message', 
         type=str,
-        help='Path to the input message file'
+        help='Path to the input message file',
+        required=True
     )
     
     # Add an argument for bit plans selection
@@ -35,7 +36,8 @@ def configure_command_line_arguments():
         '-o', 
         '--output_message', 
         type=str,
-        help='Path to the output message file'
+        help='Path to the output message file',
+        required=True
     )
 
     return parser.parse_args()

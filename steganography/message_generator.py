@@ -28,7 +28,8 @@ def configure_command_line_arguments():
         '-b', 
         '--bytes', 
         type=int,
-        help='Bytes number of the message'
+        help='Bytes number of the message',
+        required=True
     )
 
     return parser.parse_args()

@@ -37,7 +37,8 @@ def configure_command_line_arguments():
         '-i', 
         '--image_path', 
         type=str,
-        help='Path to the image file'
+        help='Path to the image file',
+        required=True
     )
     
     # Add an argument for bit plans selection
@@ -45,7 +46,8 @@ def configure_command_line_arguments():
         '-b', 
         '--bits_plans', 
         type=str,
-        help='Which bit plans to use'
+        help='Which bit plans to use',
+        required=True
     )
 
     # Add an argument to force the message decode and use all bits plans.
