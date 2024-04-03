@@ -54,7 +54,7 @@ def generate_message():
     random_text = ''.join(map(chr, random_chars))
 
     # Save the random text to a file
-    with open("input_messages/"+str(args.bytes)+'_message.txt', 'w', encoding="utf-8") as file:
+    with open("input_messages/"+str(args.bytes)+'_message.txt', 'w', encoding="ascii") as file:
         file.write(random_text)
 
 

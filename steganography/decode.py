@@ -111,7 +111,7 @@ def decode_message_in_image():
     print(f"Decode: {end_time - start_time}") # Print execution time
 
     # Save message on a file
-    with open("output_messages/" + image_name + ".txt", 'w', encoding="utf-8") as file:
+    with open("output_messages/" + image_name + ".txt", 'w', encoding="ascii") as file:
         file.write(message)
 
 
