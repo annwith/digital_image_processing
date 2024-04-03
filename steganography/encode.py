@@ -113,7 +113,7 @@ def encode_message_in_image():
     print(f"Available image space: {available_image_space} bytes")
 
     # Get message and read it
-    with open(file=args.message_path, mode='r', encoding="ascii") as file:
+    with open(file=args.message_path, mode='r', encoding="utf-8") as file:
         message = file.read()
 
     start_time = time.time() # Set start time
