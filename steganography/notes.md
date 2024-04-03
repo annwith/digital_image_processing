@@ -1,18 +1,13 @@
 ### Urgente:
-1. Verificar se estamos alterando os planos de bits corretos. Ter certeza disso. OK.
-2. Fazer código para mostrar plano de bits da image, e imagem... OK
-3. Fazer relatório
-4. for idx in range(3): img[ : , : , idx].map(func) com função para transformar de int pra bin e vice versa.
-5. Revisar requirements.txt
-6. Colocar quais argumentos são obrigatórios no argparse
-7. Arquivo fecha automaticamente após o with. Não precisa do close (checar isso.)
+1. Revisar relatório
+2. Revisar requirements.txt !!
+3. Completar README.md
+4. Tô chamando de ruido e nem sei se é ruido.
 
 ### Importante:
-1. É melhor colocar pasta pra imagem e mensagem de saída mesmo. Ok? Depois modificar isso
-2. Checar os tipos direitinho, tipo de imagem de entrada, tipo de arquivo de entrada.
-3. Imagem PNG com transparência como fica? cv2.IMREAD_UNCHANGED?
-4. Verificar se a forma de abrir a imagem aumenta o contraste. Queremos a imagem exatamente como ela está.
-5. Informar a porcentagem da imagem que foi modificada
+1. Ensure image datatype is really necessary?
+2. Verificar se a forma de abrir a imagem aumenta o contraste. Queremos a imagem exatamente como ela está.
+3. Verificar como que usa italico pq eu usei em tudo.
 
 ### Testes:
 1. Checar se a mensagem é valida, e se não for, apresentar o problema (caracter inválido, ...)

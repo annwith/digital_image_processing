@@ -28,7 +28,7 @@ def configure_command_line_arguments():
     # Create an ArgumentParser object
     parser = argparse.ArgumentParser(description='Show the bit plans of an image')
 
-     # Add an argument for the input image path
+    # Add an argument for the input image path
     parser.add_argument(
         '-i', 
         '--input_image_path', 
