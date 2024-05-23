@@ -7,7 +7,6 @@ import cv2 as cv
 from skimage.transform import rotate
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 import pytesseract
 
 
@@ -91,12 +90,14 @@ def slope_from_horizontal_projection(
         np.ndarray: The possible slopes of the text.
 
     """
-    # Threshold the image - How to make this good for all images?
-    # I think local method will work better
     # _, binary_image = cv.threshold(image, 127, 255, cv.THRESH_BINARY)
 
+    # Print information
+    print("******" * 6)
+    print("Aligment with horizontal projection.")
+
     # Apply edge detection method on the image
-    binary_image = cv.Canny(image, 50, 150) # Como encontrar esses parâmetros?
+    binary_image = cv.Canny(image, 50, 150)
 
     # Show the binary image
     cv.imshow('Binary Image', binary_image)
@@ -116,7 +117,7 @@ def slope_from_horizontal_projection(
     max_angles = np.array([])
     
     # Calculate the objective function for each angle
-    print("******" * 5)
+    print("******" * 6)
     for step in steps:
         
         # Set the angles to be tested
@@ -147,8 +148,8 @@ def slope_from_horizontal_projection(
         start = max_angles - step + (step / 10)
         end = max_angles + step
 
-        print("Max Angles:", max_angles)
-        print("******" * 5)
+        print("Max angles:", max_angles)
+        print("******" * 6)
 
     return max_angles
 
@@ -169,17 +170,12 @@ def slope_from_hough_transform(
     """
 
     # Apply edge detection method on the image
-    binary_image = cv.Canny(image, 50, 150) # How to make this good for all images?
+    binary_image = cv.Canny(image, 50, 150)
 
     # Show the binary image
     cv.imshow('Binary Image', binary_image)
     cv.waitKey(0)
     cv.destroyAllWindows()
-
-    # How to set a good threshold
-    # Could be inputed by the user [Optional] Nah, it's not a good idea
-    # Could be calculated based on the size of the image or the number of black pixels
-    # Could be found iteratively [The most efficient way, but most complex]
 
     # Perform Hough Line Transform
     lines = cv.HoughLines(
@@ -204,12 +200,9 @@ def slope_from_hough_transform(
 
     # Median
     median = np.median(angles)
-    print(f'Median: {median}')
 
-    # Classic straight-line Hough transform
-    # Set a precision of 0.5 degree.
-    # tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
-    # h, theta, d = hough_line(image, theta=tested_angles)
+    # Print the median
+    print(f'Median: {median}')
 
     # The below for loop runs till r and theta values
     # are in the range of the 2d array
@@ -252,6 +245,63 @@ def slope_from_hough_transform(
     return np.array([round(median, int(math.log10(1 / precision)))])
 
 
+def find_best_slope_using_ocr(
+    slopes: np.ndarray,
+) -> float:
+    """
+    Gets the correct slope of the text using Tesseract OCR. Runs OCR to each 
+    possible slope, gets the confidente for each detected word and calculates 
+    the median confidence. The slope with the highest median confidence is
+    returned.
+
+    If there is a tie, the slope with the lowest angle is returned (angles are
+    on the [0, 360[ interval).
+    
+    Parameters:
+        slopes (np.ndarray): The possible slopes of the text.    
+    
+    Returns:
+        float: The slope of the text.
+
+    """
+    # Print information
+    print("Find correct slope using OCR.")
+
+    # Get the slopes + 180 degrees
+    slopes = np.append(slopes, (slopes + 180) % 360)
+
+    # Sort the slopes
+    slopes = np.sort(slopes)
+
+    # Best median confidence
+    best_median_confidence = -float('inf')
+    best_slope = None
+
+    print("******" * 6)
+    for s in slopes:
+        # Print the slope
+        print(f'Slope: {s}')
+
+        # Rotate the image
+        rotated_image = rotate(image, s, resize=True, cval=1)
+
+        # Convert the rotated image to uint8
+        rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
+
+        # Use Tesseract to get detailed information, including confidence levels
+        data = pytesseract.image_to_data(rotated_image, output_type=pytesseract.Output.DICT)
+
+        # Print mean confidence and median confidence
+        print(f"Median confidence: {np.median(data['conf'])}")
+        print("******" * 6)
+
+        # Update the best median confidence
+        if np.median(data['conf']) > best_median_confidence:
+            best_median_confidence = np.median(data['conf'])
+            best_slope = s
+
+    return best_slope
+
 # Configure the command line arguments
 args = configure_command_line_arguments()
 
@@ -280,37 +330,11 @@ elif args.mode == 1:
 else:
     raise ValueError('Invalid mode.')
 
-# Get the slopes + 180 degrees
-slopes = np.append(slopes, (slopes + 180) % 360)
-
-# Best median confidence
-best_median_confidence = -float('inf')
-best_slope = None
-
-for s in slopes:
-    # Print the slope
-    print(f'Possible slope: {s}')
-
-    # Rotate the image
-    rotated_image = rotate(image, s, resize=True, cval=1)
-
-    # Convert the rotated image to uint8
-    rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
-
-    # Use Tesseract to get detailed information, including confidence levels
-    data = pytesseract.image_to_data(rotated_image, output_type=pytesseract.Output.DICT)
-
-    # Print mean confidence and median confidence
-    print(f"Median Confidence: {np.median(data['conf'])}")
-    print("******" * 5)
-
-    # Update the best median confidence
-    if np.median(data['conf']) > best_median_confidence:
-        best_median_confidence = np.median(data['conf'])
-        best_slope = s
+# Find the best slope using OCR
+best_slope = find_best_slope_using_ocr(slopes=slopes)
 
 # Print the best slope
-print(f'Best slope: {best_slope}')
+print(f'Correct slope: {best_slope}')
 
 # Rotate the image
 rotated_image = rotate(image, best_slope, resize=True, cval=1)
@@ -319,7 +343,7 @@ rotated_image = rotate(image, best_slope, resize=True, cval=1)
 rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
 
 # Show the rotated image
-cv.imshow('Rotated Image', rotated_image)
+cv.imshow('Align', rotated_image)
 cv.waitKey(0)
 cv.destroyAllWindows()
 
@@ -333,13 +357,13 @@ output_path_image = output_path_image.replace('{decimal}', str(decimal))
 # Print the output path
 print("Rotated image saved in:", output_path_image.format(
     image_name=image_name, 
-    mode=args.mode, slope=s
+    mode=args.mode, slope=best_slope
 ))
 
 # Save the rotated image
 cv.imwrite(output_path_image.format(
     image_name=image_name, 
-    mode=args.mode, slope=s
+    mode=args.mode, slope=best_slope
 ), rotated_image)
 
 # Perform text extraction using Tesseract
@@ -352,12 +376,12 @@ output_path_text = output_path_text.replace('{decimal}', str(decimal))
 # Print the output path
 print("Rotated image text saved in:", output_path_text.format(
     image_name=image_name, 
-    mode=args.mode, slope=s
+    mode=args.mode, slope=best_slope
 ))
 
 # Save the rotated image text
 with open(output_path_text.format(
     image_name=image_name, 
-    mode=args.mode, slope=s
+    mode=args.mode, slope=best_slope
 ), 'w') as file:
     file.write(text)
