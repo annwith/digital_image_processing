@@ -7,6 +7,8 @@ import cv2 as cv
 from skimage.transform import rotate
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+import pytesseract
 
 
 def configure_command_line_arguments():
@@ -61,8 +63,12 @@ def configure_command_line_arguments():
 def objective_function(profile: np.ndarray) -> float:
     """
     Calculates the square of the differences between adjacent cells in the profile.
-    :param profile: Profile of the horizontal projection
-    :return: Value of the objective function
+   
+    Parameters:
+        profile (np.ndarray): The profile to analyze.
+    Returns:
+        float: The sum of squares of the differences between adjacent cells.
+    
     """
     # Calculate the difference between adjacent cells
     diff = np.diff(profile)
@@ -71,48 +77,80 @@ def objective_function(profile: np.ndarray) -> float:
     return np.sum(diff ** 2)
 
 
-# Improve the time of this one
 def slope_from_horizontal_projection(
     image: np.ndarray,
     precision: float = 1
 ) -> np.ndarray:
     """
     Calculate the slope of the text in the image using horizontal projection.
-    :param image: Image
-    :return: List of possible slopes of the text
+    
+    Parameters:
+        image (np.ndarray): The grayscale image to analyze.
+        precision (float): The precision of the slope calculation.
+    Returns:
+        np.ndarray: The possible slopes of the text.
+
     """
     # Threshold the image - How to make this good for all images?
     # I think local method will work better
-    _, binary_image = cv.threshold(image, 127, 255, cv.THRESH_BINARY)
+    # _, binary_image = cv.threshold(image, 127, 255, cv.THRESH_BINARY)
 
     # Apply edge detection method on the image
-    binary_image = cv.Canny(image, 50, 150)
+    binary_image = cv.Canny(image, 50, 150) # Como encontrar esses parâmetros?
 
     # Show the binary image
     cv.imshow('Binary Image', binary_image)
     cv.waitKey(0)
     cv.destroyAllWindows()
 
-    # Set the angles to be tested
-    angles = np.arange(0, 180, precision)
-
     # Initialize the nd.array of values
-    values = np.array([], dtype=int)
+    func_values = {}
 
+    # Precision decimal places
+    precision_decimal_places = int(math.log10(1 / precision))
+
+    # Initialize the start and end angles and the steps
+    start = [0]
+    end = [360]
+    steps = np.geomspace(start=1, stop=precision, num=precision_decimal_places + 1, endpoint=True)
+    max_angles = np.array([])
+    
     # Calculate the objective function for each angle
-    for angle in angles:
+    print("******" * 5)
+    for step in steps:
+        
+        # Set the angles to be tested
+        angles = np.array([], dtype=float)
+        for i in range(len(start)):
+            angles = np.append(angles, np.arange(start[i], end[i], step))
 
-        # Perform the rotation
-        rotated_image = rotate(binary_image, angle, resize=True, cval=1)
+        print("Step:", step)
+        print("Start:", start)
+        print("End:", end - step)
 
-        # Calculate number of zeros in each line
-        profile = np.sum(rotated_image == 0, axis=1)
+        for angle in angles:
 
-        # Calculate the value of the objective function
-        values = np.append(values, objective_function(profile))
+            # Perform the rotation
+            rotated_image = rotate(binary_image, angle, resize=True, cval=1)
 
-    # Returns the angles with the maximum value
-    return np.where(values == values.max())[0] / (len(angles) / 180)
+            # Calculate number of zeros in each line
+            profile = np.sum(rotated_image == 0, axis=1)
+
+            # Calculate the value of the objective function
+            func_values[angle] = objective_function(profile)
+
+        # Get the angle with the maximum value
+        max_value = max(func_values.values())
+        max_angles = [key for key, value in func_values.items() if value == max_value]
+        max_angles = np.array(max_angles)
+        max_angles = np.unique(np.around(max_angles, precision_decimal_places))
+        start = max_angles - step + (step / 10)
+        end = max_angles + step
+
+        print("Max Angles:", max_angles)
+        print("******" * 5)
+
+    return max_angles
 
 
 def slope_from_hough_transform(
@@ -121,8 +159,13 @@ def slope_from_hough_transform(
 ) -> np.ndarray:
     """
     Calculate the slope of the text in the image using Hough Transform.
-    :param binary_image: Binary image
-    :return: List of possible slopes of the text
+    
+    Parameters:
+        image (np.ndarray): The grayscale image to analyze.
+        precision (float): The precision of the slope calculation.
+    Returns:
+        np.ndarray: The possible slopes of the text.
+
     """
 
     # Apply edge detection method on the image
@@ -134,9 +177,9 @@ def slope_from_hough_transform(
     cv.destroyAllWindows()
 
     # How to set a good threshold
-    # Could be inputed by the user [Optional]
+    # Could be inputed by the user [Optional] Nah, it's not a good idea
     # Could be calculated based on the size of the image or the number of black pixels
-    # Could be found iteratively
+    # Could be found iteratively [The most efficient way, but most complex]
 
     # Perform Hough Line Transform
     lines = cv.HoughLines(
@@ -155,7 +198,6 @@ def slope_from_hough_transform(
 
     # Get angles of the lines
     angles = np.array([l[0][1] for l in lines])
-    print("Angles:", angles)
 
     # Convert angles to degrees and shift them by 90 degrees
     angles = angles * 180 / np.pi + 90
@@ -207,11 +249,6 @@ def slope_from_hough_transform(
     cv.waitKey(0)
     cv.destroyAllWindows()
 
-    # Classic straight-line Hough transform
-    # Set a precision of 0.5 degree.
-    # tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360, endpoint=False)
-    # h, theta, d = hough_line(image, theta=tested_angles)
-
     return np.array([round(median, int(math.log10(1 / precision)))])
 
 
@@ -244,29 +281,83 @@ else:
     raise ValueError('Invalid mode.')
 
 # Get the slopes + 180 degrees
-slopes = np.append(slopes, (slopes + 180))
+slopes = np.append(slopes, (slopes + 180) % 360)
+
+# Best median confidence
+best_median_confidence = -float('inf')
+best_slope = None
 
 for s in slopes:
     # Print the slope
     print(f'Possible slope: {s}')
 
     # Rotate the image
-    rotated_image = rotate(image, s, resize=True)
+    rotated_image = rotate(image, s, resize=True, cval=1)
 
-    # Show the rotated image
-    cv.imshow('Rotated Image', rotated_image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # Convert the rotated image to uint8
+    rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
 
-    # Define decimal places
-    decimal = - int(math.log10(precision))
+    # Use Tesseract to get detailed information, including confidence levels
+    data = pytesseract.image_to_data(rotated_image, output_type=pytesseract.Output.DICT)
 
-    # Define the output path and decimal places
-    output_path_txt = 'output_images/{image_name}_mode_{mode}_rotated_{slope:.{decimal}f}.png'
-    output_path_txt = output_path_txt.replace('{decimal}', str(decimal))
+    # Print mean confidence and median confidence
+    print(f"Median Confidence: {np.median(data['conf'])}")
+    print("******" * 5)
 
-    # Save the rotated image
-    cv.imwrite(output_path_txt.format(
-        image_name=image_name, 
-        mode=args.mode, slope=s
-    ), rotated_image)
+    # Update the best median confidence
+    if np.median(data['conf']) > best_median_confidence:
+        best_median_confidence = np.median(data['conf'])
+        best_slope = s
+
+# Print the best slope
+print(f'Best slope: {best_slope}')
+
+# Rotate the image
+rotated_image = rotate(image, best_slope, resize=True, cval=1)
+
+# Convert the rotated image to uint8
+rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
+
+# Show the rotated image
+cv.imshow('Rotated Image', rotated_image)
+cv.waitKey(0)
+cv.destroyAllWindows()
+
+# Define decimal places
+decimal = - int(math.log10(precision))
+
+# Define the output path and decimal places
+output_path_image = 'output_images/{image_name}_mode_{mode}_rotated_{slope:.{decimal}f}.png'
+output_path_image = output_path_image.replace('{decimal}', str(decimal))
+
+# Print the output path
+print("Rotated image saved in:", output_path_image.format(
+    image_name=image_name, 
+    mode=args.mode, slope=s
+))
+
+# Save the rotated image
+cv.imwrite(output_path_image.format(
+    image_name=image_name, 
+    mode=args.mode, slope=s
+), rotated_image)
+
+# Perform text extraction using Tesseract
+text = pytesseract.image_to_string(rotated_image)
+
+# Define the output path and decimal places
+output_path_text = 'output_texts/{image_name}_mode_{mode}_rotated_{slope:.{decimal}f}.txt'
+output_path_text = output_path_text.replace('{decimal}', str(decimal))
+
+# Print the output path
+print("Rotated image text saved in:", output_path_text.format(
+    image_name=image_name, 
+    mode=args.mode, slope=s
+))
+
+# Save the rotated image text
+with open(output_path_text.format(
+    image_name=image_name, 
+    mode=args.mode, slope=s
+), 'w') as file:
+    file.write(text)

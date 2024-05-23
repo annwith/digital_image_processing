@@ -1,0 +1,3 @@
+# Document Align
+* E se a precisão for 0.5. Diferente de 1, 0.1, 0.01...
+* Tempo da projeção horizontal
