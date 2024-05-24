@@ -8,6 +8,19 @@ from skimage.transform import rotate
 import numpy as np
 import math
 import pytesseract
+import time
+
+
+def is_power_of_ten(x: float) -> bool:
+    """
+    Check if a number is a power of ten smaller than 10.
+
+    Parameters:
+        x (float): The number to check.
+    Returns:
+        bool: True if the number is a power of ten, False otherwise.
+    """
+    return x > 0 and x < 10 and 10**round(math.log10(x)) == x
 
 
 def configure_command_line_arguments():
@@ -90,7 +103,6 @@ def slope_from_horizontal_projection(
         np.ndarray: The possible slopes of the text.
 
     """
-    # _, binary_image = cv.threshold(image, 127, 255, cv.THRESH_BINARY)
 
     # Print information
     print("******" * 6)
@@ -99,10 +111,8 @@ def slope_from_horizontal_projection(
     # Apply edge detection method on the image
     binary_image = cv.Canny(image, 50, 150)
 
-    # Show the binary image
-    cv.imshow('Binary Image', binary_image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # Start the timer
+    start_time = time.time()
 
     # Initialize the nd.array of values
     func_values = {}
@@ -151,6 +161,13 @@ def slope_from_horizontal_projection(
         print("Max angles:", max_angles)
         print("******" * 6)
 
+    # Stop the timer
+    end_time = time.time()
+
+    # Print the total time taken
+    print(f"Horizontal projection time: {end_time - start_time:.2f} seconds")
+    print("******" * 6)
+
     return max_angles
 
 
@@ -169,6 +186,10 @@ def slope_from_hough_transform(
 
     """
 
+    # Print information
+    print("******" * 6)
+    print("Aligment with hough transform.")
+
     # Apply edge detection method on the image
     binary_image = cv.Canny(image, 50, 150)
 
@@ -177,12 +198,15 @@ def slope_from_hough_transform(
     cv.waitKey(0)
     cv.destroyAllWindows()
 
+    # Start the timer
+    start_time = time.time()
+
     # Perform Hough Line Transform
     lines = cv.HoughLines(
         image=binary_image, # Input image
         rho=1, # Distance resolution in pixels
         theta=np.pi / (180 / precision), # Angle resolution in radians
-        threshold=(binary_image.shape[0] + binary_image.shape[1]) // 6 # Depends of the size of the image... [Find a good value]
+        threshold=(binary_image.shape[0] + binary_image.shape[1]) // 6
     )
 
     # Checks if any line was found
@@ -203,38 +227,32 @@ def slope_from_hough_transform(
 
     # Print the median
     print(f'Median: {median}')
+    print("******" * 6)
 
-    # The below for loop runs till r and theta values
-    # are in the range of the 2d array
+    # Stop the timer
+    end_time = time.time()
+
+    # Print the total time taken
+    print(f"cv.HoughLines time: {end_time - start_time:.2f} seconds")
+    print("******" * 6)
+
+    # Show the detected lines
     for r_theta in lines:
         arr = np.array(r_theta[0], dtype=np.float64)
         r, theta = arr
 
-        # Stores the value of cos(theta) in a
         a = np.cos(theta)
-
-        # Stores the value of sin(theta) in b
         b = np.sin(theta)
 
-        # x0 stores the value rcos(theta)
         x0 = a*r
-
-        # y0 stores the value rsin(theta)
         y0 = b*r
 
-        # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
         x1 = int(x0 + 1000*(-b))
-
-        # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
         y1 = int(y0 + 1000*(a))
 
-        # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
         x2 = int(x0 - 1000*(-b))
-
-        # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
         y2 = int(y0 - 1000*(a))
 
-        # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
         cv.line(binary_image, (x1, y1), (x2, y2), 127, 2)
     
     # Show the Hough Lines
@@ -302,12 +320,16 @@ def find_best_slope_using_ocr(
 
     return best_slope
 
+
 # Configure the command line arguments
 args = configure_command_line_arguments()
 
 # Get image name and the precision
 image_name = args.image_path.split('/')[-1].split('.')[0]
 precision = args.precision
+
+# Assert precision is a power of ten
+assert is_power_of_ten(precision), "Precision must be a power of ten between 0 and 1."
 
 # Load image
 image = cv.imread(args.image_path, cv.IMREAD_GRAYSCALE)
@@ -341,11 +363,6 @@ rotated_image = rotate(image, best_slope, resize=True, cval=1)
 
 # Convert the rotated image to uint8
 rotated_image = np.array(rotated_image * 255, dtype=np.uint8)
-
-# Show the rotated image
-cv.imshow('Align', rotated_image)
-cv.waitKey(0)
-cv.destroyAllWindows()
 
 # Define decimal places
 decimal = - int(math.log10(precision))

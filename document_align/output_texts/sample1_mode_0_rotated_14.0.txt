@@ -1,0 +1,8 @@
+UORIMICSE UNE AT
+
+GMSE Imaging
+Deskewing an image can help a lot, if
+you want to do OCR, OMR, barcode
+detection or just improve the
+readability of scanned images.
+

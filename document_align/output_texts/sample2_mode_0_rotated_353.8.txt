@@ -1,0 +1,152 @@
+ 
+
+128 |REE TRANGACTIONG ON KNOWLEDGE AND DATA ENGINEERING, OL 12. NO.1, JAMUARYIFEBHUARY 2500
+
+Natural Language Grammatical Inference
+with Recurrent Neural Networks
+
+Steve Lawrence, Member, IEEE, C. Lee Giles, Fellow, IEEE, and Sandiway Fong
+
+[Abstract—Ths pape examines the nducve nora of complex grammar with veut netwens—cpoctialy. he ask considered
+‘atta! of raring a network o casey natura! anguignsettences as renal o' unyamnatal Perey exhbting the same kid
+(of acrmnatoy power prowand byte Preece and Paranelorsinguste tamewark or Goverment-and Eee theory. Neural
+‘networks ae waited, not the Svson mo tered fale components assumed by Charly, i aero o prduce he ame
+‘pmo as nave spaakors on sharply grmmatcanungrarmancal data. How a rocurent neva rank could poscest Ings:
+‘capaity and iw properties of various comman recta neural work arches se dacuteed. The protien exes Wang
+betavor whch fen not econ wth mabe: grammars ad raning was may Ge However, ater plenty Several
+
+tecreigues aimed at moving We converges Ole aden! deacan! Dacpopaghtan-trougpriune Waning agar, SITcant
+
+toa
+
+ 
+
+ng wa poss was lou ha Cova rcnecres ove ber abe 0 learn an appropiate rarsmar. The eperusc ofthe
+
+‘networks and er taring i Babyz. Fry, he eatracon of re nthe form close ewe sate poms ewestated
+
+Index Terma—Recurrent nova naworks, natura language processing, rammaica inference, goverment anc Mery,
+‘radent ducer, smufited arnessng, paneer parameters ammerk. aomata Pxa0n
+
+ 
+
+ 
+
+1 Intropuction
+
+us paper considers the task of classifying satural
+
+language sentences as grammatical or ungrammat
+We attempt t train neural networks, without the bifurc
+tion into learned vs, innate components assumed by
+Chomsky, to produce the same judgments as native
+speakers on sharply grammatical/ungrammatical data
+Omly recurrent neural networks are investigated for
+‘computational reasons. Computationally, recurrent neural
+networks are more powerful than fewdforward networks
+and some recurrent architectures have been shown to be at
+Feast Turing equivalent {53}, [54]. We investigate the
+properties of various popular recurrent neural network
+architectures, in particular Elman, Narendra and Parthasae
+athy (N&P), and Williams and Zipscr (W&Z) recurrent
+rnotworks, ancl also Frasconi-Gori-Soda (FGS) locally eecur-
+rent networks. We find that both Elman and W&Z recurrent
+neural networks are able to learn an appropriate grammar
+
+1 implementing techniques for improving the conver
+gence of the gradient descent based backpropagation:
+through-time taining algontthm. We analyze the operation
+‘of the networks and investigate rule approximation ot
+what the recurrent network has keamed—specifially, the
+extraction of rules in the form of deterministic finite state
+automata
+
+Previous work {38] has compared neural networks with
+
+     
+
+ 
+
+ 
+
+ 
+
+ 
+
+other machine learning paradigms on this problem—this
+
+work focuses on recurrent neural networks, investigates
+
+ 
+
+ether: com
+
+ 
+
+ 
+
+mnt accep 23 Fb
+
+ 
+     
+
+per ong, oud refer HELECS Lg Numer TORS,
+
+ 
+
+ 
+
+ 
+
+additional networks, analyzes the operation of the networks
+and the taining algorithm. and investigates rule estaction
+
+This paper is organized as follows: Section 2 provics the
+‘motivation for the task attempted. Section 3 provides 2 brie!
+Introduction to formal grammars and grammatical infer-
+tence and describes the data, Section 4 lists the recurrent
+neural network models investigated and provides details of
+the data encoding for the networks, Section 5 presents the
+results of investigation into various training heuristics and
+investigation of waining with simulated annealing, Section 6
+presents the main results and simulation details and
+‘nwestigates the operation of he networks, The extraction
+of rules in the form of deterministic finite state automata is
+Investigated in Section 7 and Section & presents 2 discussion
+fof the results and conclusions.
+
+ 
+
+    
+
+2 Motivation
+2.1 Representational Power
+Natural language has traditionally been handled using,
+symbolic computation and recursive processes. The most
+uecessful stochastic language models have been based on
+finite-state descriptions such as n-grams or halden Markov
+models. However, finite-state models cannot represent
+hierarchical structures as found in natural language’ [8
+In the past few years, several recurrent neural network
+architectures have emerged which have been used for
+grammatical inference {9}. 124), {19}, (20), (68). Recurrent
+neural networks have been uscd for several smaller natal
+language problems, eg. popers using the Elman network
+for natural language tasks include: (2) {12} (24), (58), (9)
+Neural network models have been shown to be able Wo
+
+ 
+
+ 
+
+ 
+
+tho spec a exon of Nien
+ot rang brea al yin Te
+cure ony prot hr rey sal grasa 1
+
+  
+ 
+
+ 
+
