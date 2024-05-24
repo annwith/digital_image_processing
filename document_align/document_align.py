@@ -358,6 +358,7 @@ best_slope = find_best_slope_using_ocr(slopes=slopes)
 # Print the best slope
 print(f'Correct slope: {best_slope}')
 
+
 # Rotate the image
 rotated_image = rotate(image, best_slope, resize=True, cval=1)
 
@@ -382,6 +383,27 @@ cv.imwrite(output_path_image.format(
     image_name=image_name, 
     mode=args.mode, slope=best_slope
 ), rotated_image)
+
+
+# Perform text extraction using Tesseract
+text = pytesseract.image_to_string(image)
+
+# Define the output path and decimal places
+output_path_text = 'output_texts/{image_name}.txt'
+
+# Print the output path
+print("Image text saved in:", output_path_text.format(
+    image_name=image_name, 
+    mode=args.mode, slope=best_slope
+))
+
+# Save the rotated image text
+with open(output_path_text.format(
+    image_name=image_name, 
+    mode=args.mode, slope=best_slope
+), 'w') as file:
+    file.write(text)
+
 
 # Perform text extraction using Tesseract
 text = pytesseract.image_to_string(rotated_image)
