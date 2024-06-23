@@ -22,7 +22,7 @@ def parse_args():
         help="Rotation angle in degrees (counterclockwise).")
 
     parser.add_argument(
-        '-e', 
+        '-s', 
         '--scale', 
         type=float,
         default=1.0,
@@ -33,7 +33,7 @@ def parse_args():
         '--dimension', 
         nargs=2,
         type=int,
-        help="Output image dimension (width height).")
+        help="Output image dimension (height width).")
 
     parser.add_argument(
         '-m', 
@@ -93,14 +93,16 @@ def scale_matrix(sx, sy):
 
 def rotation_matrix(angle):
     """
-    Create a rotation matrix.
+    Create a 2D rotation matrix in homogeneous coordinates.
 
     Parameters:
         angle (float): Rotation angle in degrees (counterclockwise).
+        
     Returns:
-        numpy.ndarray: Rotation matrix.
+        numpy.ndarray: 3x3 rotation matrix.
     """
-    angle_rad = np.deg2rad(-angle)
+    angle_rad = np.deg2rad(angle)  # Convert angle from degrees to radians
+
     return np.array([
         [np.cos(angle_rad), -np.sin(angle_rad), 0],
         [np.sin(angle_rad), np.cos(angle_rad), 0],
@@ -168,6 +170,12 @@ def bilinear_interpolation(image, x, y):
             (1 - dx) * dy * p12 + \
             dx * dy * p22
 
+    # Clip the pixel value
+    p = np.clip(p, 0, 255)
+
+    # Round the pixel value
+    p = np.round(p)
+
     return p
 
 
@@ -232,6 +240,12 @@ def bicubic_interpolation(image, x, y):
         for n in range(-1, 3):
             p += image[_y + n, _x + m] * B_spline_cubic(m - dx) * B_spline_cubic(dy - n)
 
+    # Clip the pixel value
+    p = np.clip(p, 0, 255)
+
+    # Round the pixel value
+    p = np.round(p)
+
     return p
 
 
@@ -288,6 +302,12 @@ def lagrange_interpolation(image, x, y):
         -dy * (dy+1) * (dy-2) * L(image, dx, _x, _y, 3) / 2 + \
         dy * (dy+1) * (dy-1) * L(image, dx, _x, _y, 4) / 6
 
+    # Clip the pixel value
+    p = np.clip(p, 0, 255)
+
+    # Round the pixel value
+    p = np.round(p)
+
     return p
 
 
@@ -311,11 +331,20 @@ def rotate_image(image, angle, interpolation='nearest'):
     else:
         raise ValueError("Invalid image shape.")
 
+    # Find the center of the image
+    center = np.array([h // 2, w // 2])
+
     # Rotation matrix
     R = rotation_matrix(angle)
 
-    # Find the center of the image
-    center = np.array([h // 2, w // 2])
+    # Translation matrixes
+    T_to_center = translation_matrix(-center[0], -center[1])
+    T_back = translation_matrix(center[0], center[1])
+
+    # Translate to the center
+    T_sequence = T_back @ R @ T_to_center
+
+    print("Transformation matrix:\n", T_sequence)
 
     # Create the output image
     rotated_image = np.zeros_like(image)
@@ -323,23 +352,13 @@ def rotate_image(image, angle, interpolation='nearest'):
     for y in range(h):
         for x in range(w):
             # Define coordinates
-            coord = np.array([y, x, 1])
-
-            # Define translation matrix
-            T_to_center = translation_matrix(-center[0], -center[1])
-            T_back = translation_matrix(center[0], center[1])
-
-            # Translate to the center
-            coord = np.matmul(T_to_center, coord)
-
-            # Rotate coordinates
-            coord = np.matmul(R, coord)
+            coord = np.array([x, y, 1])
 
             # Translate back
-            coord = np.matmul(T_back, coord)
+            new_coord = T_sequence @ coord
 
             # Image coordinates
-            new_y, new_x = coord[:2]
+            new_x, new_y = new_coord[:2]
 
             # Interpolation
             if interpolation == 'nearest':
@@ -367,11 +386,17 @@ def scale_image(image, scale, dimensions, interpolation='nearest'):
         numpy.ndarray: Scaled image.
     """
     # Get image dimensions
-    h, w, _ = image.shape
+    if len(image.shape) == 2:
+        h, w = image.shape
+        c = 1
+    elif len(image.shape) == 3:
+        h, w, c = image.shape
+    else:
+        raise ValueError("Invalid image shape.")
 
     # Get the scaling factors
     if dimensions:
-        width, height = dimensions
+        height, width = dimensions
         scale_x = width / w
         scale_y = height / h
     else:
@@ -379,31 +404,40 @@ def scale_image(image, scale, dimensions, interpolation='nearest'):
         scale_y = scale
 
     # Scaling matrix
-    S = scale_matrix(scale_x, scale_y)
+    S = scale_matrix(1/scale_x, 1/scale_y)
+
+    # Print the transformation matrix
+    print("Transformation matrix:\n", S)
 
     # Create the output image
-    scaled_image = np.zeros((int(h * scale_y), int(w * scale_x), 3))
+    new_h = round(h * scale_y)
+    new_w = round(w * scale_x)
 
-    for i in range(h):
-        for j in range(w):
+    if c == 1:
+        scaled_image = np.zeros((new_h, new_w))
+    else:
+        scaled_image = np.zeros((new_h, new_w, c))
+
+    for y in range(new_h):
+        for x in range(new_w):
             # Define coordinates
-            coord = np.array([i, j, 1])
+            coord = np.array([x, y, 1])
 
             # Scale coordinates
-            coord = np.matmul(S, coord)
+            coord = S @ coord
 
             # Translate back to image coordinates
-            new_i, new_j = coord[:2]
+            new_x, new_y = coord[:2]
 
             # Interpolation
             if interpolation == 'nearest':
-                scaled_image[i, j] = nearest_neighbor_interpolation(image, new_j, new_i)
+                scaled_image[y, x] = nearest_neighbor_interpolation(image, new_x, new_y)
             elif interpolation == 'bilinear':
-                scaled_image[i, j] = bilinear_interpolation(image, new_j, new_i)
+                scaled_image[y, x] = bilinear_interpolation(image, new_x, new_y)
             elif interpolation == 'bicubic':
-                scaled_image[i, j] = bicubic_interpolation(image, new_j, new_i)
+                scaled_image[y, x] = bicubic_interpolation(image, new_x, new_y)
             elif interpolation == 'lagrange':
-                scaled_image[i, j] = lagrange_interpolation(image, new_j, new_i)
+                scaled_image[y, x] = lagrange_interpolation(image, new_x, new_y)
 
     return scaled_image
 
@@ -443,6 +477,10 @@ def transform_image(args):
         # Compare with OpenCV rotation (Both images and subtraction of them)
         rotated_diff_image = cv.absdiff(rotated_image, rotated_image_cv)
 
+        # Print the maximum difference
+        print("Max difference:", np.max(rotated_diff_image))
+        print("Median difference:", np.median(rotated_diff_image))
+
         # Display the images
         cv.imshow('Original Image', image)
         cv.imshow('Custom Rotated Image', rotated_image)
@@ -456,13 +494,19 @@ def transform_image(args):
         # Apply custom scaling
         scaled_image = scale_image(image, args.scale, None, interpolation=args.method)
 
+        print(scaled_image.shape)
+
         # Apply OpenCV scaling
         scaled_image_cv = cv.resize(image, None, fx=args.scale, fy=args.scale, interpolation=flags_dict[args.method])
+
+        print(scaled_image_cv.shape)
 
         # Compare with OpenCV scaling (Both images and subtraction of them)
         scaled_image = scaled_image.astype(np.uint8)
         scaled_image_cv = scaled_image_cv.astype(np.uint8)
         scaled_diff_image = cv.absdiff(scaled_image, scaled_image_cv)
+
+        print("Max difference:", np.max(scaled_diff_image))        
 
         # Display the images
         cv.imshow('Original Image', image)
@@ -476,10 +520,17 @@ def transform_image(args):
     if args.dimension:
         # Apply custom resizing
         scaled_image = scale_image(image, None, args.dimension, interpolation=args.method)
+        scaled_image = scaled_image.astype(np.uint8)
 
         # Apply OpenCV resizing
-        width, height = args.dimension
+        height, width = args.dimension
         scaled_image_cv = cv.resize(image, (width, height), interpolation=flags_dict[args.method])
+
+        print(scaled_image_cv.shape)
+        print(scaled_image.shape)
+
+        print(scaled_image_cv.dtype)
+        print(scaled_image.dtype)
 
         # Compare with OpenCV resizing (Both images and subtraction of them)
         scaled_diff_image = cv.absdiff(scaled_image, scaled_image_cv)
