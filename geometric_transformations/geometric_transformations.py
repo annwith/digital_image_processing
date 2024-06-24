@@ -2,8 +2,11 @@
 Geometric transformations on an image.
 """
 import argparse
+import time
+
 import cv2 as cv
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -55,6 +58,22 @@ def parse_args():
         help="Output image in PNG format.")
 
     return parser.parse_args()
+
+
+def plot_histogram(image, title):
+    """Plot the histogram of an image."""
+    hist = cv.calcHist([image], [0], None, [256], [0, 256])
+    hist /= hist.sum()  # Normalize to sum to 1
+    hist *= 100  # Convert to percentage
+
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Pixel Value")
+    plt.ylabel("Percentage")
+    plt.plot(hist)
+    plt.xlim([0, 256])
+    plt.ylim([0, 100])  # Set y-axis limit to 100%
+    plt.show()
 
 
 def translation_matrix(tx, ty):
@@ -122,15 +141,16 @@ def nearest_neighbor_interpolation(image, x, y):
         numpy.ndarray: Interpolated pixel value.
     """
     h, w = image.shape[0], image.shape[1]
+    channels = None
     x, y = round(x), round(y)
 
-    if len(image.shape) == 2:
-        channels = 1
-    else:
+    if len(image.shape) == 3:
         channels = image.shape[2]
 
     if x < 0 or x >= w or y < 0 or y >= h:
-        return np.array([0] * channels)
+        if channels:
+            return np.array([0] * channels)
+        return 0
 
     return image[y, x]
 
@@ -147,18 +167,16 @@ def bilinear_interpolation(image, x, y):
         numpy.ndarray: Interpolated pixel value.
     """
     h, w = image.shape[0], image.shape[1]
+    channels = None
     x1, y1 = int(np.floor(x)), int(np.floor(y))
 
     dx = x - x1
     dy = y - y1
 
-    if len(image.shape) == 2:
-        channels = 1
-    else:
-        channels = image.shape[2]
-
     if x1 < 0 or (x1 + 1) >= w or y1 < 0 or (y1 + 1) >= h:
-        return np.array([0] * channels)
+        if channels:
+            return np.array([0] * channels)
+        return 0
 
     p11 = image[y1, x1]
     p12 = image[y1 + 1, x1]
@@ -200,7 +218,6 @@ def B_spline_cubic(s):
     Returns:
         float: Output value.
     """
-
     return 1/6 * (
         P(s + 2) ** 3 - \
         4 * P(s + 1) ** 3 + \
@@ -220,21 +237,23 @@ def bicubic_interpolation(image, x, y):
     Returns:
         numpy.ndarray: Interpolated pixel value.
     """
-
-    if len(image.shape) == 2:
-        channels = 1
-    else:
-        channels = image.shape[2]
+    h, w = image.shape[0], image.shape[1]
+    channels = None
 
     _x, _y = int(np.floor(x)), int(np.floor(y))
 
     dx = x - _x
     dy = y - _y
 
-    if _x - 1 < 0 or _x + 2 >= image.shape[1] or _y -1 < 0 or _y + 2 >= image.shape[0]:
-        return np.array([0] * channels)
+    if _x - 1 < 0 or _x + 2 >= w or _y -1 < 0 or _y + 2 >= h:
+        if channels:
+            return np.array([0] * channels)
+        return 0
 
-    p = np.zeros(channels)
+    if channels:
+        p = np.zeros(channels)
+    else:
+        p = 0
 
     for m in range(-1, 3):
         for n in range(-1, 3):
@@ -283,19 +302,18 @@ def lagrange_interpolation(image, x, y):
     Returns:
         numpy.ndarray: Interpolated pixel value.
     """
-
-    if len(image.shape) == 2:
-        channels = 1
-    else:
-        channels = image.shape[2]
+    h, w = image.shape[0], image.shape[1]
+    channels = None
 
     _x, _y = int(np.floor(x)), int(np.floor(y))
 
     dx = x - _x
     dy = y - _y
 
-    if _x - 1 < 0 or _x + 2 >= image.shape[1] or _y -1 < 0 or _y + 2 >= image.shape[0]:
-        return np.array([0] * channels)
+    if _x - 1 < 0 or _x + 2 >= w or _y -1 < 0 or _y + 2 >= h:
+        if channels:
+            return np.array([0] * channels)
+        return 0
 
     p = -dy * (dy-1) * (dy-2) * L(image, dx, _x, _y, 1) / 6 + \
         (dy+1) * (dy-1) * (dy-2) * L(image, dx, _x, _y, 2) / 2 + \
@@ -338,8 +356,8 @@ def rotate_image(image, angle, interpolation='nearest'):
     R = rotation_matrix(angle)
 
     # Translation matrixes
-    T_to_center = translation_matrix(-center[0], -center[1])
-    T_back = translation_matrix(center[0], center[1])
+    T_to_center = translation_matrix(-center[1], -center[0])
+    T_back = translation_matrix(center[1], center[0])
 
     # Translate to the center
     T_sequence = T_back @ R @ T_to_center
@@ -348,6 +366,9 @@ def rotate_image(image, angle, interpolation='nearest'):
 
     # Create the output image
     rotated_image = np.zeros_like(image)
+
+    # Start the timer
+    start = time.time()
 
     for y in range(h):
         for x in range(w):
@@ -369,6 +390,13 @@ def rotate_image(image, angle, interpolation='nearest'):
                 rotated_image[y, x] = bicubic_interpolation(image, new_x, new_y)
             elif interpolation == 'lagrange':
                 rotated_image[y, x] = lagrange_interpolation(image, new_x, new_y)
+
+    # End the timer
+    end = time.time()
+
+    # Print the elapsed time
+    elapsed_time = end - start
+    print(f"Time taken to construct the new image: {elapsed_time:.4f} seconds")
 
     return rotated_image
 
@@ -418,6 +446,9 @@ def scale_image(image, scale, dimensions, interpolation='nearest'):
     else:
         scaled_image = np.zeros((new_h, new_w, c))
 
+    # Start the timer
+    start = time.time()
+
     for y in range(new_h):
         for x in range(new_w):
             # Define coordinates
@@ -439,12 +470,19 @@ def scale_image(image, scale, dimensions, interpolation='nearest'):
             elif interpolation == 'lagrange':
                 scaled_image[y, x] = lagrange_interpolation(image, new_x, new_y)
 
+    # End the timer
+    end = time.time()
+
+    # Print the elapsed time
+    elapsed_time = end - start
+    print(f"Time taken to construct the new image: {elapsed_time:.4f} seconds")
+
     return scaled_image
 
 
 def transform_image(args):
     # Read the input image
-    image = cv.imread(args.input, cv.IMREAD_GRAYSCALE)
+    image = cv.imread(args.input, cv.IMREAD_UNCHANGED)
 
     # Set interpolation flags
     flags_dict = {
@@ -489,6 +527,9 @@ def transform_image(args):
         cv.waitKey(0)
         cv.destroyAllWindows()
 
+        # Plot the difference histogram
+        plot_histogram(rotated_diff_image, "Difference Histogram")
+
     # Apply scaling
     if args.scale != 1.0:
         # Apply custom scaling
@@ -515,6 +556,9 @@ def transform_image(args):
         cv.imshow('Difference Image', scaled_diff_image)
         cv.waitKey(0)
         cv.destroyAllWindows()
+
+        # Plot the difference histogram
+        plot_histogram(scaled_diff_image, "Difference Histogram")
     
     # Resize to specified dimensions
     if args.dimension:
@@ -526,12 +570,6 @@ def transform_image(args):
         height, width = args.dimension
         scaled_image_cv = cv.resize(image, (width, height), interpolation=flags_dict[args.method])
 
-        print(scaled_image_cv.shape)
-        print(scaled_image.shape)
-
-        print(scaled_image_cv.dtype)
-        print(scaled_image.dtype)
-
         # Compare with OpenCV resizing (Both images and subtraction of them)
         scaled_diff_image = cv.absdiff(scaled_image, scaled_image_cv)
 
@@ -542,6 +580,9 @@ def transform_image(args):
         cv.imshow('Difference Image', scaled_diff_image)
         cv.waitKey(0)
         cv.destroyAllWindows()
+
+        # Plot the difference histogram
+        plot_histogram(scaled_diff_image, "Difference Histogram")
     
     # Save the output image
     cv.imwrite(args.output, image)
