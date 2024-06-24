@@ -37,14 +37,13 @@ def parse_args():
         '-t',
         '--threshold',
         type=float,
-        default=0.75,
-        help="Threshold for matching descriptors."
-    )
+        default=0.1,
+        help="Threshold percentage of matches to be used (value between 0 and 1).")
 
     return parser.parse_args()
 
 
-def match_descriptors(descriptors1, descriptors2, method='orb', threshold=0.75):
+def match_descriptors(descriptors1, descriptors2, method='orb', threshold=0.5):
     """
     Find matches between descriptors of two images using BFMatcher.
     
@@ -57,7 +56,7 @@ def match_descriptors(descriptors1, descriptors2, method='orb', threshold=0.75):
         list: List of matches.
     """
     # Matcher Brute Force with Hamming distance (or L2 for SIFT/SURF)
-    if method in ['sift', 'surf']:
+    if method == 'sift':
         bf = cv.BFMatcher(cv.NORM_L2, crossCheck=True)
     else:
         bf = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
@@ -68,8 +67,12 @@ def match_descriptors(descriptors1, descriptors2, method='orb', threshold=0.75):
     # Sort matches by distance
     matches = sorted(matches, key=lambda x: x.distance)
 
-    # Filter matches based on the threshold
-    matches = [m for m in matches if m.distance < threshold * matches[0].distance]
+    # Filter matches by the threshold
+    num_matches = int(len(matches) * threshold)
+    matches = matches[:num_matches]
+
+    if len(matches) < 4:
+        raise ValueError("Not enough matches were found. Try lowering the threshold.")
 
     return matches
 
@@ -147,21 +150,25 @@ def register_images(image1_path, image2_path, output_path, method='orb', thresho
     """
     Function to perform image registration.
     """
-    # Load the two images
-    img1 = cv.imread(image1_path, cv.IMREAD_GRAYSCALE)
-    img2 = cv.imread(image2_path, cv.IMREAD_GRAYSCALE)
+    # Load the two images in RGB
+    img1_rgb = cv.imread(image1_path, cv.IMREAD_COLOR)
+    img2_rgb = cv.imread(image2_path, cv.IMREAD_COLOR)
 
     # Check if the images are loaded properly
-    if img1 is None or img2 is None:
+    if img1_rgb is None or img2_rgb is None:
         raise ValueError("One or both images could not be loaded. Check the paths.")
 
-    # Detect keypoints and descriptors
-    keypoints1, descriptors1 = find_keypoints_and_descriptors(img1, method)
-    keypoints2, descriptors2 = find_keypoints_and_descriptors(img2, method)
+    # Convert images to grayscale for keypoint detection
+    img1_gray = cv.cvtColor(img1_rgb, cv.COLOR_BGR2GRAY)
+    img2_gray = cv.cvtColor(img2_rgb, cv.COLOR_BGR2GRAY)
+
+    # Detect keypoints and descriptors in grayscale images
+    keypoints1, descriptors1 = find_keypoints_and_descriptors(img1_gray, method)
+    keypoints2, descriptors2 = find_keypoints_and_descriptors(img2_gray, method)
 
     # Show the keypoints
-    img1_keypoints = cv.drawKeypoints(img1, keypoints1, None, color=(0, 255, 0))
-    img2_keypoints = cv.drawKeypoints(img2, keypoints2, None, color=(0, 255, 0))
+    img1_keypoints = cv.drawKeypoints(img1_gray, keypoints1, None, color=(0, 255, 0))
+    img2_keypoints = cv.drawKeypoints(img2_gray, keypoints2, None, color=(0, 255, 0))
 
     plt.figure(figsize=(15, 7))
 
@@ -181,7 +188,7 @@ def register_images(image1_path, image2_path, output_path, method='orb', thresho
     matches = match_descriptors(descriptors1, descriptors2, method, threshold)
 
     # Plot both images with matches
-    img_matches = cv.drawMatches(img1, keypoints1, img2, keypoints2, matches, None)
+    img_matches = cv.drawMatches(img1_gray, keypoints1, img2_gray, keypoints2, matches, None)
 
     plt.figure(figsize=(15, 7))
     plt.title('Matches')
@@ -192,28 +199,28 @@ def register_images(image1_path, image2_path, output_path, method='orb', thresho
     # RANSAC and homography
     H, mask = ransac_and_homography(keypoints1, keypoints2, matches)
 
-    # Warp images
-    aligned_img = warp_images(img1, img2, H)
+    # Warp images using the homography matrix, but in RGB
+    aligned_img_rgb = warp_images(img1_rgb, img2_rgb, H)
 
-    # Save the aligned image
-    cv.imwrite(output_path, aligned_img)
+    # Save the aligned image in RGB
+    cv.imwrite(output_path, aligned_img_rgb)
 
     # Display the images
     plt.figure(figsize=(15, 7))
 
     plt.subplot(1, 3, 1)
     plt.title('Image 1')
-    plt.imshow(img1, cmap='gray')
+    plt.imshow(cv.cvtColor(img1_rgb, cv.COLOR_BGR2RGB))
     plt.axis('off')
 
     plt.subplot(1, 3, 2)
     plt.title('Image 2')
-    plt.imshow(img2, cmap='gray')
+    plt.imshow(cv.cvtColor(img2_rgb, cv.COLOR_BGR2RGB))
     plt.axis('off')
 
     plt.subplot(1, 3, 3)
     plt.title('Aligned Image')
-    plt.imshow(aligned_img, cmap='gray')
+    plt.imshow(cv.cvtColor(aligned_img_rgb, cv.COLOR_BGR2RGB))
     plt.axis('off')
 
     plt.show()
